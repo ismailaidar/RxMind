@@ -1,0 +1,6 @@
+@RxMind.Api_HostAddress = http://localhost:5033
+
+GET {{RxMind.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
