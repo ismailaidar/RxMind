@@ -1,12 +1,13 @@
-using Azure.AI.Projects;
+using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Agents.AI;
-
+using Azure.AI.Projects;
+using System.Text;
 namespace RxMind.Agents;
-#pragma warning disable OPENAI001
 
+#pragma warning disable OPENAI001
 public class RxMindWorkflow
 {
     private readonly Workflow _workflow;
@@ -14,9 +15,10 @@ public class RxMindWorkflow
     public RxMindWorkflow()
     {
         // Reference https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/sequential?pivots=programming-language-csharp
-        // One shared IChatClient backed by Azure Foundry
-        var deploymentName = Config.ModelDeployment ?? "gpt-4o-mini";
-        var chatClient = new AIProjectClient(new Uri(Config.FoundryEndpoint), new DefaultAzureCredential())
+        // One shared IChatClient backed by Azure OpenAI
+        var endpoint = Config.OpenAIEndpoint;
+        var deploymentName = Config.ModelDeployment;
+        var chatClient = new AIProjectClient(new Uri(endpoint), new DefaultAzureCredential())
             .GetProjectOpenAIClient()
             .GetProjectResponsesClient()
             .AsIChatClient(deploymentName);
@@ -85,16 +87,27 @@ public class RxMindWorkflow
         await using StreamingRun run = await InProcessExecution.RunStreamingAsync(_workflow, messages); // get events back one by one as each agent finishes, instead of waiting for all 4 agents to complete before getting anything. || the object that represents the running workflow.
         await run.TrySendMessageAsync(new TurnToken(emitEvents: true)); // TurnToken is the "go" signal + broadcast events
 
-        string finalOutput = string.Empty;
+        string? lastExecutorId = null;
+        var lastAgentText = new StringBuilder();
+
+        // Reference https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/sequential?pivots=programming-language-csharp#set-up-the-sequential-orchestration
         await foreach (WorkflowEvent evt in run.WatchStreamAsync())
         {
-            if (evt is WorkflowOutputEvent outputEvt) // Workflow outputs data. Reference https://learn.microsoft.com/en-us/agent-framework/workflows/events?pivots=programming-language-csharp
+            if (evt is AgentResponseUpdateEvent e) //Workflow outputs data. Reference https://learn.microsoft.com/en-us/agent-framework/workflows/events?pivots=programming-language-csharp
             {
-                finalOutput = outputEvt.Data?.ToString() ?? string.Empty;
+                if (e.ExecutorId != lastExecutorId)
+                {
+                    lastExecutorId = e.ExecutorId;
+                    lastAgentText.Clear();
+                }
+
+                lastAgentText.Append(e.Update.Text);
+            }
+            else if (evt is WorkflowOutputEvent)
+            {
                 break;
             }
         }
-
-        return finalOutput;
+        return lastAgentText.ToString();
     }
 }
