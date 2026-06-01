@@ -1,28 +1,32 @@
 # RxMind — AI Specialty Pharmacy Assistant
 
-RxMind is an AI-powered pharmacy assistant. You describe your prescription request, and a team of AI agents processes it — checking clinical safety, insurance requirements, and delivery timelines — then gives you a clear summary.
+RxMind is an internal tool for specialty pharmacy staff. When a prescription comes in — via phone, fax, or walk-in — a pharmacist or admin enters the details and RxMind runs an automated analysis: clinical safety check, insurance and PA requirements, delivery timeline, and financial assistance. The result is a structured report the staff can act on immediately.
+
+**The problem it solves:** processing a specialty prescription manually involves multiple people, multiple phone calls, and can take hours. RxMind runs the full pipeline in seconds.
+
+**Who uses it:** pharmacists and admins (Entra ID roles: `Pharmacist`, `Admin`). Patients do not interact with this system.
 
 ---
 
 ## How it works
 
-When you submit a request, it passes through 4 agents in order:
+A pharmacist enters prescription details received from a patient or prescriber. The input passes through 4 agents in order:
 
 ```
-Patient input
+Staff enters prescription details
     ↓
-1. Intake Agent       — pulls out the key info (name, medication, insurance, prescriber)
+1. Intake Agent       — extracts patient name, medication, dosage, insurance, prescriber
     ↓
 2. Clinical Agent     — checks drug interactions, dosage safety, clinical warnings
     ↓                   (searches the knowledge base for formulary info)
-3. Operations Agent   — checks if Prior Authorization is needed, estimates delivery time, finds financial assistance
+3. Operations Agent   — identifies PA requirements, delivery timeline, financial assistance
     ↓                   (searches the knowledge base for policy info)
-4. Orchestrator Agent — compiles everything into a clean, patient-friendly summary
+4. Orchestrator Agent — compiles a professional summary report for staff to act on
     ↓
-Final response
+Staff-facing analysis report
 ```
 
-Each agent sees what the previous one wrote, adds its own section, and passes it along. The last agent turns it all into something readable.
+Each agent sees what the previous one wrote, adds its own section, and passes it along.
 
 ---
 
@@ -53,7 +57,7 @@ When an agent needs information, it calls the `SearchKnowledgeBase` tool, which 
 | PDF text extraction | Azure Content Understanding |
 | Knowledge base search | Azure AI Search |
 | Backend API | ASP.NET Core (C#) |
-| Frontend | Plain HTML/CSS/JS |
+| Frontend | ASP.NET Core Razor Pages |
 
 ---
 
@@ -117,20 +121,29 @@ dotnet run
 
 The API starts at `http://localhost:5033`. On first run it will extract the PDFs and build the search index — this takes about 30–60 seconds.
 
-### 5. Open the UI
+### 5. Open the web app
 
-Open `index.html` in your browser. Type a prescription request and hit Submit.
+```bash
+cd src/RxMind.Web
+dotnet run
+```
+
+Navigate to `https://localhost:7000`. Sign in with your Entra ID account (must have `Pharmacist` or `Admin` role assigned). Enter prescription details received from a patient or prescriber and click **Run Analysis**.
 
 ---
 
-## Example request
+## Example input
+
+A pharmacist enters details received from a patient call:
 
 ```
-My name is Sarah Chen. My doctor Dr. Patel prescribed Humira 40mg 
-for Crohn's disease. I have BlueCross insurance.
+Patient: Sarah Chen
+Prescriber: Dr. Patel
+Medication: Humira 40mg — Crohn's disease
+Insurance: BlueCross
 ```
 
-The app will come back with an intake summary, clinical notes, PA/delivery info, and a patient-friendly final summary.
+RxMind returns a structured report covering the intake summary, clinical warnings, PA requirements, delivery timeline, and any financial assistance programs available.
 
 ---
 
