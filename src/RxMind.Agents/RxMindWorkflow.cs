@@ -18,7 +18,8 @@ public class RxMindWorkflow
         // One shared IChatClient backed by Azure OpenAI
         var endpoint = Config.OpenAIEndpoint;
         var deploymentName = Config.ModelDeployment;
-        var chatClient = new AIProjectClient(new Uri(endpoint), new DefaultAzureCredential())
+        var credential = new CachedTokenCredential(new DefaultAzureCredential());
+        var chatClient = new AIProjectClient(new Uri(endpoint), credential)
             .GetProjectOpenAIClient()
             .GetProjectResponsesClient()
             .AsIChatClient(deploymentName)
