@@ -38,26 +38,16 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// include app roles in the token
-builder.Services.Configure<OpenIdConnectOptions>(
-    OpenIdConnectDefaults.AuthenticationScheme, options =>
-    {
-        options.TokenValidationParameters.RoleClaimType = "roles";
-    });
-
 // Application Insights — tracks auth failures, page load latency, errors
 builder.Configuration["ApplicationInsights:ConnectionString"] =
     Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 builder.Services.AddApplicationInsightsTelemetry();
 
-// Authorization policies
 builder.Services.AddAuthorization(options =>
 {
-    // Pharmacist and Admin can submit prescriptions
     options.AddPolicy("PharmacistOrAdmin", policy =>
         policy.RequireRole("Pharmacist", "Admin"));
 
-    // Only Admin can access the human review queue
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin"));
 });
@@ -88,5 +78,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages().RequireAuthorization(); // all pages require login
-
+app.MapControllers(); // required for MicrosoftIdentity sign-in/sign-out routes
 app.Run();

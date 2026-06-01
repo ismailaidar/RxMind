@@ -9,8 +9,8 @@ using System.Net.Http.Json;
 namespace RxMind.Web.Pages;
 
 [Authorize]
-[EnableRateLimiting("perUser")]
 [Authorize(Policy = "PharmacistOrAdmin")]
+[EnableRateLimiting("perUser")]
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
