@@ -5,6 +5,11 @@ Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Application Insights — tracks LLM errors, latency, failed retrievals
+builder.Configuration["ApplicationInsights:ConnectionString"] =
+    Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+builder.Services.AddApplicationInsightsTelemetry();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -37,10 +42,23 @@ if (indexCreated)
 }
 
 // RxMindWorkflow automatically injected into the endpoint handler by DI
-app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request) =>
+app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request, ILogger<Program> logger) =>
 {
-    var result = await wf.ProcessAsync(request.Input);
-    return Results.Ok(new { response = result });
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    try
+    {
+        logger.LogInformation("Processing request. InputLength={InputLength}", request.Input.Length);
+        var result = await wf.ProcessAsync(request.Input);
+        sw.Stop();
+        logger.LogInformation("Request completed. Latency={LatencyMs}ms OutputLength={OutputLength}", sw.ElapsedMilliseconds, result.Length);
+        return Results.Ok(new { response = result });
+    }
+    catch (Exception ex)
+    {
+        sw.Stop();
+        logger.LogError(ex, "Request failed. Latency={LatencyMs}ms", sw.ElapsedMilliseconds);
+        return Results.Problem("An error occurred processing your request.");
+    }
 });
 
 app.Run();

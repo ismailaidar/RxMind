@@ -33,6 +33,11 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// Application Insights — tracks auth failures, page load latency, errors
+builder.Configuration["ApplicationInsights:ConnectionString"] =
+    Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+builder.Services.AddApplicationInsightsTelemetry();
+
 // HttpClient for calling RxMind.Api
 builder.Services.AddHttpClient("RxMindApi", client =>
 {
