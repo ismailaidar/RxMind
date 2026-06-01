@@ -1,10 +1,138 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Prescription Request";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    .card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 28px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+        margin-bottom: 24px;
+    }
+
+    .card-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #6b7280;
+        margin-bottom: 12px;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 140px;
+        border: 1.5px solid #d1d5db;
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+        border-color: #1a56a4;
+        box-shadow: 0 0 0 3px rgba(26,86,164,0.1);
+    }
+
+    .btn-submit {
+        margin-top: 14px;
+        padding: 11px 28px;
+        background: #1a56a4;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-submit:hover { background: #1e40af; }
+    .btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .loading-bar {
+        display: none;
+        align-items: center;
+        gap: 12px;
+        color: #1a56a4;
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 20px 24px;
+        background: #eff6ff;
+        border-radius: 14px;
+        border: 1.5px solid #bfdbfe;
+        margin-bottom: 24px;
+    }
+
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2.5px solid #bfdbfe;
+        border-top-color: #1a56a4;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @@keyframes spin { to { transform: rotate(360deg); } }
+
+    .response-body {
+        font-size: 0.92rem;
+        line-height: 1.75;
+        white-space: pre-wrap;
+        color: #1a202c;
+    }
+
+    .error-box {
+        background: #fff5f5;
+        border: 1.5px solid #fecaca;
+        border-radius: 14px;
+        padding: 18px 24px;
+        color: #991b1b;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+    }
+</style>
+
+<div class="card">
+    <div class="card-label">Prescription Request</div>
+    <form method="post" id="rxForm">
+        <textarea name="Input" id="inputArea"
+                  placeholder="Describe your prescription request — include medication name, dosage, insurance provider, and prescriber if available.&#10;&#10;Example: My name is Sarah Chen. My doctor Dr. Patel prescribed Humira 40mg for Crohn's disease. I have BlueCross insurance.">@Model.Input</textarea>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Submit Request</button>
+    </form>
 </div>
+
+<div class="loading-bar" id="loading">
+    <div class="spinner"></div>
+    <span>Processing your request through our AI pharmacy team&hellip;</span>
+</div>
+
+@if (Model.ErrorMessage != null)
+{
+    <div class="error-box">⚠️ @Model.ErrorMessage</div>
+}
+
+@if (Model.Response != null)
+{
+    <div class="card">
+        <div class="card-label">Pharmacy Team Response</div>
+        <div class="response-body">@Model.Response</div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById('rxForm').addEventListener('submit', function () {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('loading').style.display = 'flex';
+        });
+    </script>
+}
