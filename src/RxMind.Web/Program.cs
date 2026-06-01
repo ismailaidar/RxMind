@@ -2,7 +2,6 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-using System.Threading.RateLimiting;
 
 Env.TraversePath().Load();
 
@@ -24,19 +23,6 @@ builder.Services
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
     .EnableTokenAcquisitionToCallDownstreamApi([apiScope])
     .AddInMemoryTokenCaches(); // cache tokens so we don't request a new one every call
-
-// Rate limiting — max 5 requests per user per minute
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddPolicy("perUser", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.User?.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(1)
-            }));
-});
 
 // Application Insights — tracks auth failures, page load latency, errors
 builder.Configuration["ApplicationInsights:ConnectionString"] =
@@ -73,7 +59,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -2,6 +2,7 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using RxMind.Agents;
+using System.Threading.RateLimiting;
 
 Env.TraversePath().Load();
 
@@ -34,10 +35,24 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Rate limiting — 5 requests per user per minute on the /process endpoint
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("perUser", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User?.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+});
+
 builder.Services.AddSingleton<RxMindWorkflow>();
 
 var app = builder.Build();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -77,7 +92,8 @@ app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request, ILogge
         logger.LogError(ex, "Request failed. Latency={LatencyMs}ms", sw.ElapsedMilliseconds);
         return Results.Problem("An error occurred processing your request.");
     }
-}).RequireAuthorization();
+}).RequireAuthorization()
+  .RequireRateLimiting("perUser");
 
 app.Run();
 

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Identity.Web;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -10,7 +9,6 @@ namespace RxMind.Web.Pages;
 
 [Authorize]
 [Authorize(Policy = "PharmacistOrAdmin")]
-[EnableRateLimiting("perUser")]
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
