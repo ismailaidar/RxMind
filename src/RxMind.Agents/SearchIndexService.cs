@@ -9,7 +9,7 @@ namespace RxMind.Agents;
 
 public class SearchIndexService
 {
-    private const string IndexName = "rxmind-knowledge";
+    private readonly string IndexName = Config.IndexName;
     private const int ChunkSize = 500; // words per chunk
 
     private readonly SearchIndexClient _indexClient;
