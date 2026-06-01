@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Net.Http.Json;
 
 namespace RxMind.Web.Pages;
 
 [Authorize]
+[EnableRateLimiting("perUser")]
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
