@@ -9,6 +9,7 @@ namespace RxMind.Web.Pages;
 
 [Authorize]
 [Authorize(Policy = "PharmacistOrAdmin")]
+[AuthorizeForScopes(ScopeKeySection = "ApiScope")]
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;

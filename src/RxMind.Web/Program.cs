@@ -16,6 +16,7 @@ builder.Configuration["AzureAd:CallbackPath"] = "/signin-oidc";
 
 // The scope the Web app will request when getting a token to call the API
 var apiScope = $"api://{Environment.GetEnvironmentVariable("ENTRA_CLIENT_ID")}/process";
+builder.Configuration["ApiScope"] = apiScope; // read by [AuthorizeForScopes] on the Index page
 
 // Entra ID authentication + token acquisition for downstream API calls
 builder.Services
