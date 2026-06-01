@@ -75,23 +75,10 @@ if (indexCreated)
 }
 
 // Requires valid Entra ID bearer token — rejects any call without Authorization header
-app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request, ILogger<Program> logger) =>
+app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request) =>
 {
-    var sw = System.Diagnostics.Stopwatch.StartNew();
-    try
-    {
-        logger.LogInformation("Processing request. InputLength={InputLength}", request.Input.Length);
-        var result = await wf.ProcessAsync(request.Input);
-        sw.Stop();
-        logger.LogInformation("Request completed. Latency={LatencyMs}ms OutputLength={OutputLength}", sw.ElapsedMilliseconds, result.Length);
-        return Results.Ok(new { response = result });
-    }
-    catch (Exception ex)
-    {
-        sw.Stop();
-        logger.LogError(ex, "Request failed. Latency={LatencyMs}ms", sw.ElapsedMilliseconds);
-        return Results.Problem("An error occurred processing your request.");
-    }
+    var result = await wf.ProcessAsync(request.Input);
+    return Results.Ok(new { response = result });
 }).RequireAuthorization()
   .RequireRateLimiting("perUser");
 
