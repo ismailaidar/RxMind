@@ -21,7 +21,10 @@ public class RxMindWorkflow
         var chatClient = new AIProjectClient(new Uri(endpoint), new DefaultAzureCredential())
             .GetProjectOpenAIClient()
             .GetProjectResponsesClient()
-            .AsIChatClient(deploymentName);
+            .AsIChatClient(deploymentName)
+            .AsBuilder()
+            .Use(inner => new ContentSafetyMiddleware(inner))
+            .Build();
 
         var kb = new KnowledgeBaseService();
         var searchTool = AIFunctionFactory.Create(kb.SearchAsync, "SearchKnowledgeBase", "Search the RxMind formulary and policy knowledge base");

@@ -20,6 +20,10 @@ public static class Config
     public static string ContentUnderstandingEndpoint =>
         Environment.GetEnvironmentVariable("CONTENT_UNDERSTANDING_ENDPOINT")
         ?? throw new InvalidOperationException("CONTENT_UNDERSTANDING_ENDPOINT is not set.");
-    
+
+    public static string ContentSafetyEndpoint =>
+        Environment.GetEnvironmentVariable("CONTENT_SAFETY_ENDPOINT")
+        ?? throw new InvalidOperationException("CONTENT_SAFETY_ENDPOINT is not set.");
+
     public static string IndexName => "rxmind-knowledge";
 }
