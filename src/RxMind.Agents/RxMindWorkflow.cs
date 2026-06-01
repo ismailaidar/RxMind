@@ -23,6 +23,9 @@ public class RxMindWorkflow
             .GetProjectResponsesClient()
             .AsIChatClient(deploymentName);
 
+        var kb = new KnowledgeBaseService();
+        var searchTool = AIFunctionFactory.Create(kb.SearchAsync, "SearchKnowledgeBase", "Search the RxMind formulary and policy knowledge base");
+        
         // Create agents
         var intakeAgent = new ChatClientAgent(
             chatClient,
@@ -42,9 +45,12 @@ public class RxMindWorkflow
             - Check for common drug interactions
             - Confirm the dosage is within safe range
             - Note any clinical warnings or special handling requirements
+            Use the SearchKnowledgeBase tool to look up formulary and clinical policy information.
             Add a CLINICAL REPORT section to the input you received and return everything.
             """,
-            "ClinicalAgent");
+            "ClinicalAgent",
+            null,
+            [searchTool]);
 
         var operationsAgent = new ChatClientAgent(
             chatClient,
@@ -54,9 +60,12 @@ public class RxMindWorkflow
             - Identify if Prior Authorization (PA) is required
             - Estimate delivery timeline (standard 3-5 days, specialty 7-10 days)
             - Note any financial assistance programs available
+            Use the SearchKnowledgeBase tool to look up PA requirements and financial assistance programs.
             Add an OPERATIONS REPORT section to the input you received and return everything.
             """,
-            "OperationsAgent");
+            "OperationsAgent",
+            null,
+            [searchTool]);
 
         var orchestratorAgent = new ChatClientAgent(
             chatClient,
