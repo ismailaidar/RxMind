@@ -2,19 +2,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Identity.Web;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace RxMind.Web.Pages;
 
 [Authorize]
 [EnableRateLimiting("perUser")]
+[Authorize(Policy = "PharmacistOrAdmin")]
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ITokenAcquisition _tokenAcquisition;
+    private readonly string _apiScope;
 
-    public IndexModel(IHttpClientFactory httpClientFactory)
+    public IndexModel(IHttpClientFactory httpClientFactory, ITokenAcquisition tokenAcquisition)
     {
         _httpClientFactory = httpClientFactory;
+        _tokenAcquisition = tokenAcquisition;
+        _apiScope = $"api://{Environment.GetEnvironmentVariable("ENTRA_CLIENT_ID")}/process";
     }
 
     [BindProperty]
@@ -35,7 +42,13 @@ public class IndexModel : PageModel
 
         try
         {
+            // Get access token for the API — Entra ID validates this on the API side
+            var token = await _tokenAcquisition.GetAccessTokenForUserAsync([_apiScope]);
+
             var client = _httpClientFactory.CreateClient("RxMindApi");
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
             var result = await client.PostAsJsonAsync("/process", new { input = Input });
 
             if (!result.IsSuccessStatusCode)

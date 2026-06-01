@@ -15,10 +15,15 @@ builder.Configuration["AzureAd:ClientSecret"] = Environment.GetEnvironmentVariab
 builder.Configuration["AzureAd:Instance"] = "https://login.microsoftonline.com/";
 builder.Configuration["AzureAd:CallbackPath"] = "/signin-oidc";
 
-// Entra ID authentication
+// The scope the Web app will request when getting a token to call the API
+var apiScope = $"api://{Environment.GetEnvironmentVariable("ENTRA_CLIENT_ID")}/process";
+
+// Entra ID authentication + token acquisition for downstream API calls
 builder.Services
     .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
+    .EnableTokenAcquisitionToCallDownstreamApi([apiScope])
+    .AddInMemoryTokenCaches(); // cache tokens so we don't request a new one every call
 
 // Rate limiting — max 5 requests per user per minute
 builder.Services.AddRateLimiter(options =>
@@ -33,16 +38,35 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// include app roles in the token
+builder.Services.Configure<OpenIdConnectOptions>(
+    OpenIdConnectDefaults.AuthenticationScheme, options =>
+    {
+        options.TokenValidationParameters.RoleClaimType = "roles";
+    });
+
 // Application Insights — tracks auth failures, page load latency, errors
 builder.Configuration["ApplicationInsights:ConnectionString"] =
     Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 builder.Services.AddApplicationInsightsTelemetry();
 
-// HttpClient for calling RxMind.Api
+// Authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    // Pharmacist and Admin can submit prescriptions
+    options.AddPolicy("PharmacistOrAdmin", policy =>
+        policy.RequireRole("Pharmacist", "Admin"));
+
+    // Only Admin can access the human review queue
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+});
+
+// HttpClient that automatically attaches Entra ID bearer token to every request
 builder.Services.AddHttpClient("RxMindApi", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5033");
-    client.Timeout = TimeSpan.FromMinutes(3); // agents are slow
+    client.Timeout = TimeSpan.FromMinutes(3);
 });
 
 builder.Services.AddRazorPages()

@@ -1,4 +1,6 @@
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Identity.Web;
 using RxMind.Agents;
 
 Env.TraversePath().Load();
@@ -10,11 +12,25 @@ builder.Configuration["ApplicationInsights:ConnectionString"] =
     Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 builder.Services.AddApplicationInsightsTelemetry();
 
+// Wire Entra ID values for API token validation
+builder.Configuration["AzureAd:TenantId"] = Environment.GetEnvironmentVariable("ENTRA_TENANT_ID");
+builder.Configuration["AzureAd:ClientId"] = Environment.GetEnvironmentVariable("ENTRA_CLIENT_ID");
+builder.Configuration["AzureAd:Instance"] = "https://login.microsoftonline.com/";
+
+// API validates bearer tokens issued by Entra ID
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy.WithOrigins("https://localhost:7000")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
@@ -22,6 +38,8 @@ builder.Services.AddSingleton<RxMindWorkflow>();
 
 var app = builder.Build();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Startup indexing — extract both PDFs and upload chunks to Azure AI Search
 var filesRoot = Path.Combine(builder.Environment.ContentRootPath, "..", "RxMind.Agents", "files");
@@ -41,7 +59,7 @@ if (indexCreated)
     await indexService.IndexDocumentsAsync(policiesText);
 }
 
-// RxMindWorkflow automatically injected into the endpoint handler by DI
+// Requires valid Entra ID bearer token — rejects any call without Authorization header
 app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request, ILogger<Program> logger) =>
 {
     var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -59,7 +77,7 @@ app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request, ILogge
         logger.LogError(ex, "Request failed. Latency={LatencyMs}ms", sw.ElapsedMilliseconds);
         return Results.Problem("An error occurred processing your request.");
     }
-});
+}).RequireAuthorization();
 
 app.Run();
 
