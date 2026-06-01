@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Identity.Web;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 
 namespace RxMind.Web.Pages;
 
@@ -23,8 +24,13 @@ public class IndexModel : PageModel
         _apiScope = $"api://{Environment.GetEnvironmentVariable("ENTRA_CLIENT_ID")}/process";
     }
 
-    [BindProperty]
-    public string Input { get; set; } = string.Empty;
+    [BindProperty] public string PatientName { get; set; } = string.Empty;
+    [BindProperty] public string Medication { get; set; } = string.Empty;
+    [BindProperty] public string Dosage { get; set; } = string.Empty;
+    [BindProperty] public string Diagnosis { get; set; } = string.Empty;
+    [BindProperty] public string Insurance { get; set; } = string.Empty;
+    [BindProperty] public string Prescriber { get; set; } = string.Empty;
+    [BindProperty] public string Notes { get; set; } = string.Empty;
 
     public string? Response { get; set; }
     public string? ErrorMessage { get; set; }
@@ -33,22 +39,23 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(Input))
+        if (string.IsNullOrWhiteSpace(PatientName) || string.IsNullOrWhiteSpace(Medication))
         {
-            ErrorMessage = "Please describe your prescription request.";
+            ErrorMessage = "Patient name and medication are required.";
             return Page();
         }
 
+        var input = BuildInput();
+
         try
         {
-            // Get access token for the API — Entra ID validates this on the API side
             var token = await _tokenAcquisition.GetAccessTokenForUserAsync([_apiScope]);
 
             var client = _httpClientFactory.CreateClient("RxMindApi");
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
 
-            var result = await client.PostAsJsonAsync("/process", new { input = Input });
+            var result = await client.PostAsJsonAsync("/process", new { input });
 
             if (!result.IsSuccessStatusCode)
             {
@@ -58,6 +65,10 @@ public class IndexModel : PageModel
 
             var body = await result.Content.ReadFromJsonAsync<ApiResponse>();
             Response = body?.response;
+        }
+        catch (MicrosoftIdentityWebChallengeUserException)
+        {
+            throw;
         }
         catch (TaskCanceledException)
         {
@@ -69,6 +80,19 @@ public class IndexModel : PageModel
         }
 
         return Page();
+    }
+
+    private string BuildInput()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Patient: {PatientName}");
+        sb.AppendLine($"Medication: {Medication}");
+        if (!string.IsNullOrWhiteSpace(Dosage))      sb.AppendLine($"Dosage: {Dosage}");
+        if (!string.IsNullOrWhiteSpace(Diagnosis))   sb.AppendLine($"Diagnosis: {Diagnosis}");
+        if (!string.IsNullOrWhiteSpace(Insurance))   sb.AppendLine($"Insurance: {Insurance}");
+        if (!string.IsNullOrWhiteSpace(Prescriber))  sb.AppendLine($"Prescriber: {Prescriber}");
+        if (!string.IsNullOrWhiteSpace(Notes))       sb.AppendLine($"Notes: {Notes}");
+        return sb.ToString();
     }
 
     private record ApiResponse(string response);

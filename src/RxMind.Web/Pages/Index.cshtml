@@ -19,29 +19,60 @@
         text-transform: uppercase;
         letter-spacing: 0.6px;
         color: #6b7280;
-        margin-bottom: 12px;
+        margin-bottom: 20px;
     }
 
-    textarea {
-        width: 100%;
-        min-height: 140px;
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    label span {
+        color: #9ca3af;
+        font-weight: 400;
+    }
+
+    input[type="text"], textarea {
         border: 1.5px solid #d1d5db;
-        border-radius: 10px;
-        padding: 14px;
-        font-size: 0.95rem;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.9rem;
         font-family: inherit;
-        resize: vertical;
+        color: #1a202c;
         outline: none;
         transition: border-color 0.2s;
+        width: 100%;
     }
 
-    textarea:focus {
+    input[type="text"]:focus, textarea:focus {
         border-color: #1a56a4;
         box-shadow: 0 0 0 3px rgba(26,86,164,0.1);
     }
 
+    textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
     .btn-submit {
-        margin-top: 14px;
+        margin-top: 20px;
         padding: 11px 28px;
         background: #1a56a4;
         color: #fff;
@@ -103,8 +134,50 @@
 <div class="card">
     <div class="card-label">Prescription Intake</div>
     <form method="post" id="rxForm">
-        <textarea name="Input" id="inputArea"
-                  placeholder="Enter prescription details received from the patient or prescriber — include patient name, medication, dosage, insurance provider, and prescriber name.&#10;&#10;Example: Patient: Sarah Chen. Prescriber: Dr. Patel. Medication: Humira 40mg for Crohn's disease. Insurance: BlueCross.">@Model.Input</textarea>
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label for="PatientName">Patient Name <span>*</span></label>
+                <input type="text" id="PatientName" name="PatientName" value="@Model.PatientName"
+                       placeholder="Sarah Chen" />
+            </div>
+
+            <div class="form-group">
+                <label for="Prescriber">Prescriber <span>(optional)</span></label>
+                <input type="text" id="Prescriber" name="Prescriber" value="@Model.Prescriber"
+                       placeholder="Dr. Patel" />
+            </div>
+
+            <div class="form-group">
+                <label for="Medication">Medication <span>*</span></label>
+                <input type="text" id="Medication" name="Medication" value="@Model.Medication"
+                       placeholder="Humira" />
+            </div>
+
+            <div class="form-group">
+                <label for="Dosage">Dosage <span>(optional)</span></label>
+                <input type="text" id="Dosage" name="Dosage" value="@Model.Dosage"
+                       placeholder="40mg" />
+            </div>
+
+            <div class="form-group">
+                <label for="Diagnosis">Diagnosis / Condition <span>(optional)</span></label>
+                <input type="text" id="Diagnosis" name="Diagnosis" value="@Model.Diagnosis"
+                       placeholder="Crohn's disease" />
+            </div>
+
+            <div class="form-group">
+                <label for="Insurance">Insurance Provider <span>(optional)</span></label>
+                <input type="text" id="Insurance" name="Insurance" value="@Model.Insurance"
+                       placeholder="BlueCross" />
+            </div>
+
+            <div class="form-group full-width">
+                <label for="Notes">Additional Notes <span>(optional)</span></label>
+                <textarea id="Notes" name="Notes" placeholder="Allergies, prior auth history, patient preferences...">@Model.Notes</textarea>
+            </div>
+
+        </div>
 
         <button type="submit" class="btn-submit" id="submitBtn">Run Analysis</button>
     </form>
