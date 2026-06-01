@@ -22,15 +22,19 @@ app.UseCors();
 var filesRoot = Path.Combine(builder.Environment.ContentRootPath, "..", "RxMind.Agents", "files");
 
 var indexService = new SearchIndexService();
-await indexService.EnsureIndexExistsAsync();
+bool indexCreated = await indexService.EnsureIndexExistsAsync();
 
-var extractor = new DocumentExtractor();
+// only runs on first start when the index doesn't exist yet
+if (indexCreated)
+{
+    var extractor = new DocumentExtractor();
 
-var formularyText = await extractor.ExtractAsync(Path.Combine(filesRoot, "RxMind_Formulary.pdf"));
-await indexService.IndexDocumentsAsync(formularyText);
+    var formularyText = await extractor.ExtractAsync(Path.Combine(filesRoot, "RxMind_Formulary.pdf"));
+    await indexService.IndexDocumentsAsync(formularyText);
 
-var policiesText = await extractor.ExtractAsync(Path.Combine(filesRoot, "RxMind_Policies.pdf"));
-await indexService.IndexDocumentsAsync(policiesText);
+    var policiesText = await extractor.ExtractAsync(Path.Combine(filesRoot, "RxMind_Policies.pdf"));
+    await indexService.IndexDocumentsAsync(policiesText);
+}
 
 // RxMindWorkflow automatically injected into the endpoint handler by DI
 app.MapPost("/process", async (RxMindWorkflow wf, PatientRequest request) =>

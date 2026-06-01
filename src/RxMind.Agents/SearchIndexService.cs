@@ -24,13 +24,14 @@ public class SearchIndexService
         _searchClient = new SearchClient(endpoint, IndexName, credential);
     }
 
-    public async Task EnsureIndexExistsAsync()
+    // Returns true if the index was just created, false if it already existed.
+    public async Task<bool> EnsureIndexExistsAsync()
     {
         //  the check for index throws if not exists, forced into try/catch.
         try
         {
             await _indexClient.GetIndexAsync(IndexName);
-            return; // already exists
+            return false; // already exists
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
@@ -47,6 +48,7 @@ public class SearchIndexService
         };
 
         await _indexClient.CreateIndexAsync(index);
+        return true; // newly created
     }
 
     public async Task IndexDocumentsAsync(string markdownText)
