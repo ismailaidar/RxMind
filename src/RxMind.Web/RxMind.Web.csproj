@@ -9,13 +9,8 @@
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.3" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.10.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\RxMind.Agents\RxMind.Agents.csproj" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.10.0" />
   </ItemGroup>
 
 </Project>

@@ -39,4 +39,4 @@ logs/
 
 # Publish output
 publish/
-env/
+.env

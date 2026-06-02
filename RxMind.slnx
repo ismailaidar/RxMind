@@ -2,5 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/RxMind.Agents/RxMind.Agents.csproj" />
     <Project Path="src/RxMind.Api/RxMind.Api.csproj" />
+    <Project Path="src/RxMind.Web/RxMind.Web.csproj" />
   </Folder>
 </Solution>
