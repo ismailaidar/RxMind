@@ -8,43 +8,80 @@ RxMind is an internal tool for specialty pharmacy staff. When a prescription com
 
 ---
 
-## How it works
-
-A pharmacist enters prescription details received from a patient or prescriber. The input passes through 4 agents in order:
+## Workflow
 
 ```
-Staff enters prescription details
-    ↓
-1. Intake Agent       — extracts patient name, medication, dosage, insurance, prescriber
-    ↓
-2. Clinical Agent     — checks drug interactions, dosage safety, clinical warnings
-    ↓                   (searches the knowledge base for formulary info)
-3. Operations Agent   — identifies PA requirements, delivery timeline, financial assistance
-    ↓                   (searches the knowledge base for policy info)
-4. Orchestrator Agent — compiles a professional summary report for staff to act on
-    ↓
-Staff-facing analysis report
+                        ┌─────────────────────────────────────┐
+                        │         Pharmacy Staff              │
+                        │  (Pharmacist / Admin — Entra ID)    │
+                        └──────────────┬──────────────────────┘
+                                       │ enters prescription details
+                                       ▼
+                        ┌─────────────────────────────────────┐
+                        │           RxMind Web                │
+                        │     ASP.NET Core Razor Pages        │
+                        └──────────────┬──────────────────────┘
+                                       │ POST /process  (Bearer token)
+                                       ▼
+                        ┌─────────────────────────────────────┐
+                        │           RxMind API                │
+                        │       ASP.NET Core Minimal API      │
+                        └──────────────┬──────────────────────┘
+                                       │
+                    ┌──────────────────▼──────────────────────┐
+                    │           Sequential Workflow           │
+                    │       (Microsoft Agents AI)             │
+                    │                                         │
+                    │  ┌─────────────────────────────────┐    │
+                    │  │  1. Intake Agent                 │   │
+                    │  │     Extracts: patient, meds,     │   │
+                    │  │     dosage, insurance, prescriber│   │
+                    │  └──────────────┬──────────────────┘    │
+                    │                 │                       │
+                    │  ┌──────────────▼──────────────────┐    │
+                    │  │  2. Clinical Agent               │   │
+                    │  │     Drug interactions, dosage    │◄──┼──── Azure AI Search
+                    │  │     safety, clinical warnings    │   │     (rxmind-knowledge)
+                    │  └──────────────┬──────────────────┘    │          ▲
+                    │                 │                       │          │
+                    │  ┌──────────────▼──────────────────┐    │   ┌──────┴──────────┐
+                    │  │  3. Operations Agent             │   │   │  Knowledge Base │
+                    │  │     PA requirements, delivery    │◄──┼───│  RxMind_        │
+                    │  │     timeline, financial assist.  │   │   │  Formulary.pdf  │
+                    │  └──────────────┬──────────────────┘    │   │  RxMind_        │
+                    │                 │                       │   │  Policies.pdf   │
+                    │  ┌──────────────▼──────────────────┐    │   └─────────────────┘
+                    │  │  4. Orchestrator Agent           │   │
+                    │  │     Compiles final staff-facing  │   │
+                    │  │     analysis report              │   │
+                    │  └──────────────┬──────────────────┘    │
+                    │                 │                       │
+                    └─────────────────┼───────────────────────┘
+                                      │
+                                      ▼ all agents share one LLM
+                        ┌─────────────────────────────────────┐
+                        │         Azure OpenAI                │
+                        │         gpt-4.1-mini                │
+                        └─────────────────────────────────────┘
 ```
 
-Each agent sees what the previous one wrote, adds its own section, and passes it along.
+### Startup — knowledge base indexing
 
----
+Runs once on first startup, skipped on every restart after that:
 
-## The knowledge base (RAG)
+```
+RxMind_Formulary.pdf ──► Azure Content Understanding ──► markdown text
+RxMind_Policies.pdf  ──►                              ──► split into 500-word chunks
+                                                           ──► Azure AI Search index
+```
 
-The clinical and operations agents don't just rely on the model's memory — they can search a real knowledge base built from two PDF documents:
+### Security
 
-- `RxMind_Formulary.pdf` — drug coverage and formulary info
-- `RxMind_Policies.pdf` — PA requirements, delivery timelines, financial assistance
-
-On first startup, the app:
-1. Extracts text from both PDFs using **Azure Content Understanding**
-2. Splits the text into 500-word chunks
-3. Uploads every chunk to **Azure AI Search**
-
-On every restart after that, it skips this step — the index already exists.
-
-When an agent needs information, it calls the `SearchKnowledgeBase` tool, which searches the index and returns the 3 most relevant chunks.
+```
+Browser ──► Entra ID login ──► OIDC cookie (Web)
+Web     ──► Entra ID token ──► Bearer JWT  (API validates)
+API     ──► DefaultAzureCredential ──► Azure OpenAI / Search / Content Understanding
+```
 
 ---
 
@@ -56,30 +93,11 @@ When an agent needs information, it calls the `SearchKnowledgeBase` tool, which 
 | Language model | Azure OpenAI (gpt-4.1-mini) |
 | PDF text extraction | Azure Content Understanding |
 | Knowledge base search | Azure AI Search |
-| Backend API | ASP.NET Core (C#) |
+| Content safety | Azure AI Content Safety |
+| Authentication | Microsoft Entra ID (OIDC + JWT bearer) |
+| Observability | Application Insights + OpenTelemetry |
+| Backend API | ASP.NET Core Minimal API |
 | Frontend | ASP.NET Core Razor Pages |
-
----
-
-## Project structure
-
-```
-RxMind/
-├── index.html                        ← open this in your browser
-├── .env                              ← your Azure keys go here
-└── src/
-    ├── RxMind.Api/
-    │   └── Program.cs                ← startup + API endpoint
-    └── RxMind.Agents/
-        ├── RxMindWorkflow.cs         ← the 4 agents and sequential workflow
-        ├── DocumentExtractor.cs      ← PDF → markdown text
-        ├── SearchIndexService.cs     ← creates the index + uploads chunks
-        ├── KnowledgeBaseService.cs   ← searches the index
-        ├── Config.cs                 ← reads environment variables
-        └── files/
-            ├── RxMind_Formulary.pdf
-            └── RxMind_Policies.pdf
-```
 
 ---
 
@@ -88,25 +106,32 @@ RxMind/
 ### 1. Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- An Azure account with these services set up:
-  - Azure OpenAI
+- Azure CLI — `az login` for local development
+- Azure services:
+  - Azure OpenAI (gpt-4.1-mini deployment)
   - Azure AI Search
+  - Azure AI Content Safety
   - Azure Content Understanding (Azure AI Services)
+  - Microsoft Entra ID app registration
+  - Application Insights
 
 ### 2. Configure your environment
 
-Open `.env` in the project root and fill in your values:
+Create a `.env` file in the project root:
 
 ```
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
 AZURE_MODEL_DEPLOYMENT=gpt-4.1-mini
 AZURE_SEARCH_ENDPOINT=https://your-search.search.windows.net
 CONTENT_UNDERSTANDING_ENDPOINT=https://your-resource.services.ai.azure.com/
+CONTENT_SAFETY_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
+ENTRA_TENANT_ID=your-tenant-id
+ENTRA_CLIENT_ID=your-client-id
+ENTRA_CLIENT_SECRET=your-client-secret
+APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...
 ```
 
 ### 3. Log in to Azure
-
-The app uses your Azure login instead of API keys (DefaultAzureCredential):
 
 ```bash
 az login
@@ -119,16 +144,16 @@ cd src/RxMind.Api
 dotnet run
 ```
 
-The API starts at `http://localhost:5033`. On first run it will extract the PDFs and build the search index — this takes about 30–60 seconds.
+Starts at `http://localhost:5033`. On first run, extracts PDFs and builds the search index (~30–60 seconds).
 
-### 5. Open the web app
+### 5. Run the web app
 
 ```bash
 cd src/RxMind.Web
 dotnet run
 ```
 
-Navigate to `https://localhost:7000`. Sign in with your Entra ID account (must have `Pharmacist` or `Admin` role assigned). Enter prescription details received from a patient or prescriber and click **Run Analysis**.
+Navigate to `https://localhost:7000`. Sign in with your Entra ID account (must have `Pharmacist` or `Admin` role assigned).
 
 ---
 
@@ -136,25 +161,14 @@ Navigate to `https://localhost:7000`. Sign in with your Entra ID account (must h
 
 A pharmacist enters details received from a patient call:
 
-```
-Patient: Sarah Chen
-Prescriber: Dr. Patel
-Medication: Humira 40mg — Crohn's disease
-Insurance: BlueCross
-```
+| Field | Value |
+|---|---|
+| Patient | Sarah Chen |
+| Prescriber | Dr. Patel |
+| Medication | Humira |
+| Dosage | 40mg |
+| Diagnosis | Crohn's disease |
+| Insurance | BlueCross |
 
-RxMind returns a structured report covering the intake summary, clinical warnings, PA requirements, delivery timeline, and any financial assistance programs available.
+RxMind returns a structured report covering clinical warnings, PA requirements, delivery timeline, and financial assistance programs.
 
----
-
-## API
-
-`POST http://localhost:5033/process`
-
-```json
-// Request
-{ "input": "your prescription request here" }
-
-// Response
-{ "response": "the full pharmacy team report" }
-```
