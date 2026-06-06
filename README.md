@@ -98,6 +98,7 @@ API     ──► DefaultAzureCredential ──► Azure OpenAI / Search / Conte
 | Observability | Application Insights + OpenTelemetry |
 | Backend API | ASP.NET Core Minimal API |
 | Frontend | ASP.NET Core Razor Pages |
+| Retrieval eval | xUnit + custom metrics (Hit@k, MRR, P@k) |
 
 ---
 
@@ -154,6 +155,39 @@ dotnet run
 ```
 
 Navigate to `https://localhost:7000`. Sign in with your Entra ID account (must have `Pharmacist` or `Admin` role assigned).
+
+---
+
+## Retrieval eval
+
+The `tests/RxMind.Eval` project measures whether Azure AI Search returns useful chunks for real pharmacy queries. It runs on every CI pass and fails the build if retrieval regresses.
+
+### How it works
+
+```
+golden_dataset.json  ──►  fire 10 queries against live index
+                     ──►  check each chunk for relevant keywords
+                     ──►  compute Hit@3 / MRR / P@3
+                     ──►  assert thresholds  ──►  write eval_report.md
+```
+
+### Metrics and thresholds
+
+| Metric | Threshold | What it catches |
+|---|---|---|
+| Hit@3 | ≥ 70% | Retrieval returns nothing useful for most queries |
+| MRR | ≥ 0.50 | Relevant chunk consistently ranks 3rd or lower |
+| P@3 | ≥ 0.40 | More than 60% of returned slots are irrelevant noise |
+| No empty results | 0 | Index is down or empty |
+
+### Run it
+
+```bash
+# requires AZURE_SEARCH_ENDPOINT in .env — skips cleanly if not set
+dotnet test tests/RxMind.Eval/
+```
+
+After a run, `eval_report.md` is written next to the test DLL with a per-query breakdown showing which chunks were retrieved, their relevance scores, and which keyword matched (or didn't).
 
 ---
 
