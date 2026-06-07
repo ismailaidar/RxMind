@@ -2,101 +2,187 @@
   {
     "id": "q01",
     "query": "prior authorization requirements specialty medication",
-    "relevant_keywords": [
-      "prior authorization", "prior auth", "PA required", "authorization",
-      "preauthorization", "pre-authorization", "prior approval",
-      "medical necessity", "formulary exception", "specialty drug"
-    ],
-    "description": "PA requirements — most common pharmacy workflow trigger"
+    "description": "PA requirements \u2014 most common pharmacy workflow trigger",
+    "relevantKeywords": [
+      "prior authorization",
+      "prior auth",
+      "PA required",
+      "authorization",
+      "preauthorization",
+      "pre-authorization",
+      "prior approval",
+      "medical necessity",
+      "formulary exception",
+      "specialty drug"
+    ]
   },
   {
     "id": "q02",
     "query": "Humira adalimumab formulary coverage biologic",
-    "relevant_keywords": [
-      "humira", "adalimumab",
-      "biologic", "TNF", "tumor necrosis", "autoimmune",
-      "rheumatoid", "psoriasis", "immunomodulator"
-    ],
-    "description": "Humira — high-volume specialty biologic"
+    "description": "Humira \u2014 high-volume specialty biologic",
+    "relevantKeywords": [
+      "humira",
+      "adalimumab",
+      "biologic",
+      "TNF",
+      "tumor necrosis",
+      "autoimmune",
+      "rheumatoid",
+      "psoriasis",
+      "immunomodulator"
+    ]
   },
   {
     "id": "q03",
     "query": "patient assistance program financial help copay reduction",
-    "relevant_keywords": [
-      "patient assistance", "financial assistance", "copay", "co-pay", "assistance program",
-      "out-of-pocket", "cost sharing", "manufacturer", "foundation",
-      "subsidy", "discount", "reimbursement", "grant"
-    ],
-    "description": "Financial assistance and copay programs"
+    "description": "Financial assistance and copay programs",
+    "relevantKeywords": [
+      "patient assistance",
+      "financial assistance",
+      "copay",
+      "co-pay",
+      "assistance program",
+      "out-of-pocket",
+      "cost sharing",
+      "manufacturer",
+      "foundation",
+      "subsidy",
+      "discount",
+      "reimbursement",
+      "grant"
+    ]
   },
   {
     "id": "q04",
     "query": "specialty drug delivery shipping timeline days",
-    "relevant_keywords": [
-      "delivery", "ship", "timeline", "business day", "dispatch",
-      "courier", "overnight", "transit", "turnaround",
-      "dispense", "processing", "fill", "mail"
-    ],
-    "description": "Delivery and logistics timelines"
+    "description": "Delivery and logistics timelines",
+    "relevantKeywords": [
+      "delivery",
+      "ship",
+      "timeline",
+      "business day",
+      "dispatch",
+      "courier",
+      "overnight",
+      "transit",
+      "turnaround",
+      "dispense",
+      "processing",
+      "fill",
+      "mail"
+    ]
   },
   {
     "id": "q05",
     "query": "step therapy fail first treatment requirements",
-    "relevant_keywords": [
-      "step therapy", "fail first", "step edit", "step-therapy",
-      "first-line", "second-line", "preferred", "alternative",
-      "treatment history", "documented failure", "exception", "override"
-    ],
-    "description": "Step therapy — common insurance gate"
+    "description": "Step therapy \u2014 common insurance gate",
+    "relevantKeywords": [
+      "step therapy",
+      "fail first",
+      "step edit",
+      "step-therapy",
+      "first-line",
+      "second-line",
+      "preferred",
+      "alternative",
+      "treatment history",
+      "documented failure",
+      "exception",
+      "override"
+    ]
   },
   {
     "id": "q06",
     "query": "biosimilar substitution interchangeable drug",
-    "relevant_keywords": [
-      "biosimilar", "substitution", "interchangeable",
-      "reference product", "therapeutic alternative",
-      "switching", "transition", "brand", "biologic"
-    ],
-    "description": "Biosimilar substitution policy"
+    "description": "Biosimilar substitution policy",
+    "relevantKeywords": [
+      "biosimilar",
+      "substitution",
+      "interchangeable",
+      "reference product",
+      "therapeutic alternative",
+      "switching",
+      "transition",
+      "brand",
+      "biologic"
+    ]
   },
   {
     "id": "q07",
     "query": "cold chain refrigerated storage temperature medication handling",
-    "relevant_keywords": [
-      "cold chain", "refrigerat", "temperature", "storage", "2-8", "frozen",
-      "handling", "room temperature", "controlled", "ambient",
-      "stability", "excursion", "insulated", "celsius"
-    ],
-    "description": "Cold chain and storage requirements"
+    "description": "Cold chain and storage requirements",
+    "relevantKeywords": [
+      "cold chain",
+      "refrigerat",
+      "temperature",
+      "storage",
+      "2-8",
+      "frozen",
+      "handling",
+      "room temperature",
+      "controlled",
+      "ambient",
+      "stability",
+      "excursion",
+      "insulated",
+      "celsius"
+    ]
   },
   {
     "id": "q08",
     "query": "quantity limit days supply dispensing specialty",
-    "relevant_keywords": [
-      "quantity limit", "days supply", "dispensing limit", "supply limit",
-      "quantity", "refill", "30-day", "90-day", "per month",
-      "maximum", "unit", "dispensing"
-    ],
-    "description": "Quantity limits per fill"
+    "description": "Quantity limits per fill",
+    "relevantKeywords": [
+      "quantity limit",
+      "days supply",
+      "dispensing limit",
+      "supply limit",
+      "quantity",
+      "refill",
+      "30-day",
+      "90-day",
+      "per month",
+      "maximum",
+      "unit",
+      "dispensing"
+    ]
   },
   {
     "id": "q09",
     "query": "appeal denial rejected insurance claim process",
-    "relevant_keywords": [
-      "appeal", "denial", "denied", "rejected", "grievance",
-      "coverage determination", "reconsideration", "exception",
-      "overturn", "dispute", "redetermination", "review"
-    ],
-    "description": "Appeals and denial management process"
+    "description": "Appeals and denial management process",
+    "relevantKeywords": [
+      "appeal",
+      "denial",
+      "denied",
+      "rejected",
+      "grievance",
+      "coverage determination",
+      "reconsideration",
+      "exception",
+      "overturn",
+      "dispute",
+      "redetermination",
+      "review"
+    ]
   },
   {
     "id": "q10",
     "query": "clinical criteria diagnosis indication specialty drug coverage",
-    "relevant_keywords": [
-      "clinical criteria", "diagnosis", "indication", "condition", "eligible",
-      "criteria", "approved", "documented", "therapy",
-      "medical necessity", "covered", "FDA"
-    ],
-    "description": "Clinical eligibility criteria for coverage"
+    "description": "Clinical eligibility criteria for coverage",
+    "relevantKeywords": [
+      "clinical criteria",
+      "diagnosis",
+      "indication",
+      "condition",
+      "eligible",
+      "criteria",
+      "approved",
+      "documented",
+      "therapy",
+      "medical necessity",
+      "covered",
+      "FDA"
+    ]
   }
 ]

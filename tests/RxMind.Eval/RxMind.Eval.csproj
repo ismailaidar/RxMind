@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="RetriEval.Core" Version="0.3.2" />
     <ProjectReference Include="..\..\src\RxMind.Agents\RxMind.Agents.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.6.6" />

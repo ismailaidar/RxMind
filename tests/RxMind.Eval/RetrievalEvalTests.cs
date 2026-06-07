@@ -1,13 +1,20 @@
 using DotNetEnv;
+using RetriEval.Core;
 using RxMind.Agents;
 using Xunit;
 
 namespace RxMind.Eval;
 
-// Runs all queries once and shares results across every test in this class.
 public class EvalFixture : IAsyncLifetime
 {
-    public List<QueryResult> Results { get; } = new();
+    public static readonly MetricThresholds Thresholds = new()
+    {
+        HitAtK       = 0.70,
+        Mrr          = 0.50,
+        PrecisionAtK = 0.40
+    };
+
+    public EvalReport? Report { get; private set; }
     public bool IsConfigured { get; private set; }
     public string ReportPath { get; private set; } = string.Empty;
 
@@ -19,28 +26,22 @@ public class EvalFixture : IAsyncLifetime
 
         if (!IsConfigured) return;
 
-        var kb = new KnowledgeBaseService();
+        var retriever = new AzureSearchRetriever(new KnowledgeBaseService());
+        var runner    = new EvalRunner(
+            retriever,
+            KeywordGrader.Instance,
+            new EvalOptions { K = 3, Observer = new ConsoleEvalObserver() });
+
         var dataPath = Path.Combine(AppContext.BaseDirectory, "data", "golden_dataset.json");
-        var dataset = EvalDataset.Load(dataPath);
+        var dataset  = await GoldenSetLoader.LoadAsync(dataPath);
 
-        foreach (var c in dataset)
-        {
-            var chunks = await kb.SearchRawAsync(c.Query, size: 3);
-            var relevance = chunks
-                .Select(chunk => EvalDataset.IsRelevant(chunk.Content, c.RelevantKeywords))
-                .ToList();
+        Report = await runner.RunAsync(dataset);
 
-            Results.Add(new QueryResult(
-                c.Id, c.Query,
-                chunks.Select(ch => ch.Content).ToList(),
-                chunks.Select(ch => ch.Score).ToList(),
-                relevance));
-        }
-
-        var reporter = new EvalReporter();
-        foreach (var r in Results) reporter.Add(r);
         ReportPath = Path.Combine(AppContext.BaseDirectory, "eval_report.md");
-        reporter.WriteTo(ReportPath);
+        await new MarkdownReporter(new MarkdownReporterOptions
+        {
+            Thresholds = Thresholds
+        }).WriteAsync(Report, ReportPath);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -48,49 +49,43 @@ public class EvalFixture : IAsyncLifetime
 
 public class RetrievalEvalTests(EvalFixture fixture) : IClassFixture<EvalFixture>
 {
-    // Gates: tests fail (and block CI) when retrieval regresses past these thresholds.
-    private const double HitAtThreeThreshold   = 0.70; // ≥70% of queries find a relevant chunk in top 3
-    private const double MrrThreshold          = 0.50; // first relevant result is on average rank 2
-    private const double PrecisionAtKThreshold = 0.40; // ≥40% of returned slots are relevant
+    private static readonly MetricThresholds Thresholds = EvalFixture.Thresholds;
 
     [SkippableFact]
     public void HitAtThree_AtLeast70Percent()
     {
         Skip.If(!fixture.IsConfigured, "AZURE_SEARCH_ENDPOINT not set — skipping eval");
-        var score = EvalMetrics.Mean(
-            fixture.Results.Select(r => EvalMetrics.HitAtK(r.Relevance, 3) ? 1.0 : 0.0));
-        Assert.True(score >= HitAtThreeThreshold,
-            $"Hit@3 = {score:P1} — below {HitAtThreeThreshold:P0} threshold. " +
-            $"See {fixture.ReportPath} for per-query breakdown.");
+        var score = fixture.Report!.Aggregate.HitAtK;
+        Assert.True(score >= Thresholds.HitAtK,
+            $"Hit@3 = {score:P1} — below {Thresholds.HitAtK:P0} threshold. " +
+            $"See {fixture.ReportPath}");
     }
 
     [SkippableFact]
     public void MRR_AtLeastPoint5()
     {
         Skip.If(!fixture.IsConfigured, "AZURE_SEARCH_ENDPOINT not set — skipping eval");
-        var score = EvalMetrics.Mean(
-            fixture.Results.Select(r => EvalMetrics.ReciprocalRank(r.Relevance)));
-        Assert.True(score >= MrrThreshold,
-            $"MRR = {score:F3} — below {MrrThreshold:F2} threshold.");
+        var score = fixture.Report!.Aggregate.Mrr;
+        Assert.True(score >= Thresholds.Mrr,
+            $"MRR = {score:F3} — below {Thresholds.Mrr:F2} threshold.");
     }
 
     [SkippableFact]
     public void PrecisionAtThree_AtLeastPoint4()
     {
         Skip.If(!fixture.IsConfigured, "AZURE_SEARCH_ENDPOINT not set — skipping eval");
-        var score = EvalMetrics.Mean(
-            fixture.Results.Select(r => EvalMetrics.PrecisionAtK(r.Relevance, 3)));
-        Assert.True(score >= PrecisionAtKThreshold,
-            $"P@3 = {score:F3} — below {PrecisionAtKThreshold:F2} threshold.");
+        var score = fixture.Report!.Aggregate.MeanPrecisionAtK;
+        Assert.True(score >= Thresholds.PrecisionAtK,
+            $"P@3 = {score:F3} — below {Thresholds.PrecisionAtK:F2} threshold.");
     }
 
     [SkippableFact]
     public void NoQueryReturnsZeroChunks()
     {
         Skip.If(!fixture.IsConfigured, "AZURE_SEARCH_ENDPOINT not set — skipping eval");
-        var empty = fixture.Results
-            .Where(r => r.Chunks.Count == 0)
-            .Select(r => $"{r.Id}: {r.Query}")
+        var empty = fixture.Report!.Results
+            .Where(r => r.Retrieved.Count == 0)
+            .Select(r => $"{r.CaseId}: {r.Query}")
             .ToList();
         Assert.True(empty.Count == 0,
             $"Queries returned zero chunks — index may be empty or unreachable:\n" +
